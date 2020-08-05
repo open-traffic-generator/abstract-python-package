@@ -1,0 +1,11 @@
+language: python
+python:
+- '3.8.5'
+script:
+- python -m unittest discover --start-directory abstract_traffic_generator/tests
+deploy:
+  provider: pypi
+  distributions: 'bdist_wheel'
+  username: abalogh
+  password: 
+
