@@ -6,6 +6,6 @@ script:
 deploy:
   provider: pypi
   distributions: 'bdist_wheel'
-  username: abalogh
-  password: 
+  username: __token__
+  password: pypi-AgEIcHlwaS5vcmcCJDE3MzE3ZjZhLWUxNWItNDgyYi04MjM0LTJkYWQyMWRiNzhkNwACS3sicGVybWlzc2lvbnMiOiB7InByb2plY3RzIjogWyJhYnN0cmFjdC10cmFmZmljLWdlbmVyYXRvciJdfSwgInZlcnNpb24iOiAxfQAABiDL_PaHJ893Y_WX52912gyH_Vw9DyKXeeK1L-nFLRU9dQ
 
