@@ -1,7 +1,6 @@
 import os
 from setuptools import setup
 
-# python setup.py bdist_wheel
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(base_dir, 'README.md')) as fid:
