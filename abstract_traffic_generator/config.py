@@ -2,10 +2,12 @@ from typing import Union
 
 
 class Config(object):
-    __slots__ = ['action', 'ports', 'device_groups', 'flows']
+    """Control the configuration
+    """
 
-    def __init__(self, ports=[], device_groups=[], flows=[]):
-        self.action = 'CONFIGURE'
+    def __init__(self, action: Union['CREATE', 'UPDATE']='CREATE', 
+        ports=[], device_groups=[], flows=[]):
+        self.action = action
         self.ports = ports
         self.device_groups = device_groups
         self.flows = flows

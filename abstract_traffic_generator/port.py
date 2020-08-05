@@ -1,6 +1,10 @@
-class Port(object):
-    __slots__ = ['name', 'location']
+import typing
 
-    def __init__(self, name=None, location=None):
+
+class Port(object):
+    """Port class
+    """
+
+    def __init__(self, name: str = None, location: str = None):
         self.name = name
         self.location = location

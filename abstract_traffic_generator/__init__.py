@@ -2,3 +2,7 @@ from abstract_traffic_generator.api import Api
 from abstract_traffic_generator.config import Config
 from abstract_traffic_generator.port import Port
 from abstract_traffic_generator.flow import Flow
+from abstract_traffic_generator.portendpoint import PortEndpoint
+from abstract_traffic_generator.headers.ethernet import Ethernet
+from abstract_traffic_generator.headers.vlan import Vlan
+from abstract_traffic_generator.headers.ipv4 import Ipv4
