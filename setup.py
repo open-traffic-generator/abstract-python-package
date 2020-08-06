@@ -29,5 +29,5 @@ setup(
     keywords='abstract testing traffic generator automation',
     packages=['abstract_traffic_generator'],
     include_package_data=True,
-    python_requires='>=3, <4'
+    python_requires='>=3.5'
 )
