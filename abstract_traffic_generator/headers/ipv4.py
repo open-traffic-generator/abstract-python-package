@@ -56,13 +56,32 @@ class Raw(object):
 
 class Ipv4(object):
     """Ipv4 traffic header
+
+    Args
+    ----
+    src:
+    dst:
+    priority:
+    ecn:
     """
+    ECN_NON_CAPABLE_00 = 0
+    ECN_CAPABLE_01 = 1
+    ECN_CAPABLE_10 = 2
+    ECN_CONGESTION_ENCOUNTERED_11 = 3
+
     def __init__(self, 
         src: str = '0.0.0.0', 
         dst: str = '0.0.0.0', 
-        priority: Union[Dscp, Tos, Raw] = Dscp()):
+        priority: Union[Dscp, Tos, Raw] = Dscp(),
+        ecn: Union[
+            Literal[ECN_NON_CAPABLE_00], 
+            Literal[ECN_CAPABLE_01], 
+            Literal[ECN_CAPABLE_10],
+            Literal[ECN_CONGESTION_ENCOUNTERED_11]
+        ] = ECN_NON_CAPABLE_00):
         self.type = 'IPV4'
         self.src = src
         self.dst = dst
         self.priority = priority
+        self.ecn = ecn
 
