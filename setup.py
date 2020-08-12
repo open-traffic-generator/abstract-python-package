@@ -24,7 +24,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Testing :: Traffic Generation',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5, 3.6, 3.7, 3.8',
     ],
     keywords='abstract testing traffic generator automation',
     packages=['abstract_traffic_generator'],

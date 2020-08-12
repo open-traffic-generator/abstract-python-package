@@ -1,0 +1,190 @@
+"""Build Process
+"""
+import json
+import os
+import stat
+import subprocess
+import shutil
+import datetime
+
+
+class Builder(object):
+    """Builds the abstract python package based on the open-traffic-generator 
+    models repository.
+    """
+    def __init__(self, dependencies=True, clone_and_build=True):
+        self._dependencies = dependencies
+        self._clone_and_build = clone_and_build
+        self._install_dependencies()
+        self._clone_models_and_build()
+
+    def _install_dependencies(self):
+        if self._dependencies is False:
+            return
+        packages = [
+            'pyyaml', 
+            'jsonpath-ng'
+        ]
+        for package in packages:
+            print('installing dependency %s...' % package)
+            process_args = [
+                'pip',
+                'install',
+                '-U',
+                package
+            ]
+            subprocess.Popen(process_args, shell=False).wait()
+
+    def _handleError(self, func, path, exc_info):
+        if not os.access(path, os.W_OK):
+            os.chmod(path, stat.S_IWUSR)
+            func(path)
+
+    def _clone_models_and_build(self):
+        if self._clone_and_build is False:
+            return
+        print('cloning models...')
+        shutil.rmtree('./models', onerror=self._handleError)
+        if os.path.exists('./models') is True:
+            os.rmdir('./models')
+        process_args = [
+            'git',
+            'clone',
+            'https://github.com/open-traffic-generator/models.git',
+        ]
+        process = subprocess.Popen(process_args, shell=False)
+        process.wait()
+        process_args = [
+            'python',
+            'bundler.py'
+        ]
+        subprocess.Popen(process_args, cwd='./models', shell=False).wait()
+
+    def generate(self):
+        shutil.rmtree('./src', ignore_errors=True)
+        if os.path.exists('./src') is True:
+            os.rmdir('./src')
+        with open('./models/openapi.yaml') as fid:
+            self._openapi =  yaml.safe_load(fid)
+        os.mkdir('./src')
+        self._write_data_class()
+
+    def _write_data_class(self):
+        for key, yobject in self._openapi['components']['schemas'].items():
+            pieces = key.split('.')
+            self._classname = key
+            path = './src'
+            if '.' in key:
+                self._classname = pieces[-1]
+                for piece in pieces[0:-1]:
+                    path += '/' + piece.lower()
+                    if os.path.exists(path) is False:
+                        os.mkdir(path)
+            self._classfilename = path + '/' + self._classname.lower()
+            print('generating %s...' % self._classfilename)
+            with open(self._classfilename + '.py', 'w') as self._fid:
+                self._write(0, 'class %s(object):' % self._classname)
+                self._write(1, '"""%s class' % key)
+                self._write(1)
+                for line in yobject['description'].split('\n'):
+                    for sentence in line.split('. '):
+                        self._write(1, sentence)
+                self._write(1, '"""')
+                args = ''
+                choice_tuples = []
+                for name, property in yobject['properties'].items():
+                    args += '%s%s' % (', ', name) 
+                    if name == 'choice':
+                        for choice_enum in property['enum']:
+                            choice_class = yobject['properties'][choice_enum]['$ref'].split('/')[-1]
+                            choice_tuples.append((choice_class, choice_enum))
+                if len(choice_tuples) > 0:
+                    self._write(1, '_CHOICE_MAP = {')
+                    for choice_tuple in choice_tuples:
+                        self._write(2, "'%s' = '%s'," % (choice_tuple[0], choice_tuple[1]))
+                    self._write(1, '}')
+                self._write(1, 'def __init__(self%s):' % args)
+                self._write_data_properties(yobject)
+        return self
+
+    def _write_data_properties(self, schema):
+        for name, property in schema['properties'].items():
+            self._write(2, 'self.%s = %s' % (name, name))
+
+    def _write(self, indent, line=''):
+        self._fid.write('\t' * indent + line + '\n')
+
+    def _bundle(self, base_dir, api_filename, output_filename):
+        print('bundling started')
+        self._read_file(base_dir, api_filename)
+        with open(self._output_filename, 'w') as fid:
+            yaml.dump(self._content, fid, indent=2, sort_keys=False)
+        print('bundling complete')
+
+    def _read_file(self, base_dir, filename):
+        filename = os.path.join(base_dir, filename)
+        filename = os.path.abspath(os.path.normpath(filename))
+        base_dir = os.path.dirname(filename)
+        with open(filename) as fid:
+            yobject = yaml.safe_load(fid)
+        self._process_yaml_object(base_dir, yobject)
+
+    def _process_yaml_object(self, base_dir, yobject):
+        for key, value in yobject.items():
+            if key in ['openapi', 'info', 'servers'] and key not in self._content.keys():
+                self._content[key] = value
+            elif key in ['paths']:
+                if key not in self._content.keys():
+                    self._content[key] = {}
+                for sub_key in value.keys():
+                    self._content[key][sub_key] = value[sub_key] 
+            elif key == 'components':
+                if key not in self._content.keys():
+                    self._content[key] = {
+                        'schemas': {}
+                    }
+                if 'schemas' in value:
+                    schemas = value['schemas']
+                    for schema_key in schemas.keys():
+                        self._content['components']['schemas'][schema_key] = schemas[schema_key]
+        self._resolve_refs(base_dir, yobject)
+
+    def _resolve_refs(self, base_dir, yobject):
+        """Resolving references is relative to the current file location
+        """
+        if isinstance(yobject, dict):
+            for key, value in yobject.items():
+                if key == '$ref' and value.startswith('#') is False:
+                    refs = value.split('#')
+                    print('resolving %s' % value)
+                    self._read_file(base_dir, refs[0])
+                    yobject[key] = '#%s' % refs[1]
+                elif isinstance(value, str) and 'x-inline' in value:
+                    refs = value.split('#')
+                    print('inlining %s' % value)
+                    inline = self._get_inline_ref(base_dir, refs[0], refs[1])
+                    yobject[key] = inline
+                else:
+                    self._resolve_refs(base_dir, value)
+        elif isinstance(yobject, list):
+            for item in yobject:
+                self._resolve_refs(base_dir, item) 
+
+    def _get_inline_ref(self, base_dir, filename, inline_key):
+        filename = os.path.join(base_dir, filename)
+        filename = os.path.abspath(os.path.normpath(filename))
+        base_dir = os.path.dirname(filename)
+        with open(filename) as fid:
+            yobject = yaml.safe_load(fid)
+        return parse('$%s' % inline_key.replace('/', '.'), ).find(yobject)[0].value
+                        
+
+if __name__ == '__main__':
+    builder = Builder(dependencies=False, 
+        clone_and_build=False)
+
+    import yaml
+    from jsonpath_ng import jsonpath, parse
+
+    builder.generate()
+
