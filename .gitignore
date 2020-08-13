@@ -1,6 +1,6 @@
 # dependencies
 models/
-src/
+abstract_python_package/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

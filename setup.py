@@ -12,7 +12,7 @@ with open(os.path.join(base_dir, 'VERSION')) as fid:
 setup(
     name='abstract_traffic_generator',
     version=version_number,
-    description='The Abstract Traffic Generator Python Package',
+    description='The Open Traffic Generator Abstract Python Package',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/open-traffic-generator/abstract-python-package',

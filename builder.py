@@ -37,8 +37,11 @@ class Builder(object):
 
     def _handleError(self, func, path, exc_info):
         if not os.access(path, os.W_OK):
-            os.chmod(path, stat.S_IWUSR)
-            func(path)
+            try:
+                os.chmod(path, stat.S_IWUSR)
+                func(path)
+            except Exception as e:
+                print(e)
 
     def _clone_models_and_build(self):
         if self._clone_and_build is False:
@@ -61,31 +64,39 @@ class Builder(object):
         subprocess.Popen(process_args, cwd='./models', shell=False).wait()
 
     def generate(self):
-        shutil.rmtree('./src', ignore_errors=True)
-        if os.path.exists('./src') is True:
-            os.rmdir('./src')
+        self._src_dir = './abstract_python_package'
+        shutil.rmtree(self._src_dir, onerror=self._handleError)
+        if os.path.exists(self._src_dir) is True:
+            os.rmdir(self._src_dir)
         with open('./models/openapi.yaml') as fid:
             self._openapi =  yaml.safe_load(fid)
-        os.mkdir('./src')
+        os.mkdir(self._src_dir)
         self._write_data_class()
 
     def _write_data_class(self):
         for key, yobject in self._openapi['components']['schemas'].items():
             pieces = key.split('.')
             self._classname = key
-            path = './src'
+            path = self._src_dir
             if '.' in key:
                 self._classname = pieces[-1]
                 for piece in pieces[0:-1]:
                     path += '/' + piece.lower()
                     if os.path.exists(path) is False:
                         os.mkdir(path)
+
+            init_filename = os.path.join(path, '__init__.py')
+            if os.path.exists(init_filename) is False:
+                open(init_filename, 'w').close()
+
             self._classfilename = path + '/' + self._classname.lower()
             print('generating %s...' % self._classfilename)
             with open(self._classfilename + '.py', 'w') as self._fid:
                 self._write(0, 'class %s(object):' % self._classname)
                 self._write(1, '"""%s class' % key)
                 self._write(1)
+                if 'description' not in yobject:
+                    yobject['description'] = 'TBD'
                 for line in yobject['description'].split('\n'):
                     for sentence in line.split('. '):
                         self._write(1, sentence)
@@ -96,20 +107,52 @@ class Builder(object):
                     args += '%s%s' % (', ', name) 
                     if name == 'choice':
                         for choice_enum in property['enum']:
-                            choice_class = yobject['properties'][choice_enum]['$ref'].split('/')[-1]
-                            choice_tuples.append((choice_class, choice_enum))
+                            choice = yobject['properties'][choice_enum]
+                            if '$ref' in choice:
+                                choice_classname = self._get_classname_from_ref(choice['$ref'])
+                                choice_tuples.append((choice_classname, choice_enum))
+                            elif choice['type'] == 'string':
+                                choice_tuples.append(('str', choice_enum))
+                            elif choice['type'] == 'array':
+                                choice_tuples.append(('list', choice_enum))
                 if len(choice_tuples) > 0:
+                    args = ', choice'
                     self._write(1, '_CHOICE_MAP = {')
                     for choice_tuple in choice_tuples:
-                        self._write(2, "'%s' = '%s'," % (choice_tuple[0], choice_tuple[1]))
+                        self._write(2, "'%s': '%s'," % (choice_tuple[0], choice_tuple[1]))
                     self._write(1, '}')
                 self._write(1, 'def __init__(self%s):' % args)
-                self._write_data_properties(yobject)
+                self._write_data_properties(yobject, choice_tuples)
         return self
 
-    def _write_data_properties(self, schema):
-        for name, property in schema['properties'].items():
-            self._write(2, 'self.%s = %s' % (name, name))
+    def _write_data_properties(self, schema, choice_tuples):
+        if len(choice_tuples) > 0:
+            choices = []
+            for choice_tuple in choice_tuples:
+                choices.append(choice_tuple[0])
+            self._write(2, 'if isinstance(choice, (%s)) is False:' % (', '.join(choices)))
+            self._write(3, "raise TypeError('choice must be of type: %s')" % (', '.join(choices)))
+            self._write(2, "self.choice = {")
+            self._write(3, "'choice': _CHOICE_MAP[choice.__class__.__name__],")
+            self._write(3, "_CHOICE_MAP[choice.__class__.__name__]: choice")
+            self._write(2, "}")
+        else:
+            for name, property in schema['properties'].items():
+                if '$ref' in property:
+                    classname = self._get_classname_from_ref(property['$ref'])
+                    self._write(2, 'if isinstance(%s, %s) is True:' % (name, classname))
+                    self._write(3, 'self.%s = %s' % (name, name))
+                    self._write(2, 'else:')
+                    self._write(3, "raise TypeError('%s must be of type %s')" % (name, classname))
+                else:
+                    self._write(2, 'self.%s = %s' % (name, name))
+
+    def _get_classname_from_ref(self, ref):
+        final_piece = ref.split('/')[-1]
+        if '.' in final_piece:
+            return final_piece.split('.')[-1]
+        else:
+            return final_piece
 
     def _write(self, indent, line=''):
         self._fid.write('\t' * indent + line + '\n')
