@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_namespace_packages
 
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -10,9 +10,9 @@ with open(os.path.join(base_dir, 'VERSION')) as fid:
 
 
 setup(
-    name='abstract_traffic_generator',
+    name='abstract_open_traffic_generator',
     version=version_number,
-    description='The Open Traffic Generator Abstract Python Package',
+    description='The Abstract Open Traffic Generator Python Package',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/open-traffic-generator/abstract-python-package',
@@ -27,8 +27,8 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3'
     ],
-    keywords='abstract testing traffic generator automation',
-    packages=['abstract_traffic_generator'],
+    keywords='abstract testing open traffic generator automation',
+    packages=['abstract_open_traffic_generator'],
     include_package_data=True,
-    python_requires='>=2.7 <4'
+    python_requires='>=2.7, <4'
 )

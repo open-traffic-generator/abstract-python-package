@@ -1,6 +1,6 @@
 # dependencies
 models/
-abstract_python_package/
+abstract_open_traffic_generator/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -13,6 +13,7 @@ class Builder(object):
     models repository.
     """
     def __init__(self, dependencies=True, clone_and_build=True):
+        self._src_dir = './abstract_open_traffic_generator'
         self._dependencies = dependencies
         self._clone_and_build = clone_and_build
         self._install_dependencies()
@@ -64,7 +65,6 @@ class Builder(object):
         subprocess.Popen(process_args, cwd='./models', shell=False).wait()
 
     def generate(self):
-        self._src_dir = './abstract_python_package'
         shutil.rmtree(self._src_dir, onerror=self._handleError)
         if os.path.exists(self._src_dir) is True:
             os.rmdir(self._src_dir)
@@ -122,28 +122,26 @@ class Builder(object):
                         self._write(2, "'%s': '%s'," % (choice_tuple[0], choice_tuple[1]))
                     self._write(1, '}')
                 self._write(1, 'def __init__(self%s):' % args)
-                self._write_data_properties(yobject, choice_tuples)
+                self._write_data_properties(yobject, self._classname, choice_tuples)
         return self
 
-    def _write_data_properties(self, schema, choice_tuples):
+    def _write_data_properties(self, schema, classname, choice_tuples):
         if len(choice_tuples) > 0:
             choices = []
             for choice_tuple in choice_tuples:
                 choices.append(choice_tuple[0])
             self._write(2, 'if isinstance(choice, (%s)) is False:' % (', '.join(choices)))
             self._write(3, "raise TypeError('choice must be of type: %s')" % (', '.join(choices)))
-            self._write(2, "self.choice = {")
-            self._write(3, "'choice': _CHOICE_MAP[choice.__class__.__name__],")
-            self._write(3, "_CHOICE_MAP[choice.__class__.__name__]: choice")
-            self._write(2, "}")
+            self._write(2, "self.__setattr__('choice',%s._CHOICE_MAP[choice.__class__.__name__])" % classname)
+            self._write(2, "self.__setattr__(%s._CHOICE_MAP[choice.__class__.__name__], choice)" % classname)
         else:
             for name, property in schema['properties'].items():
                 if '$ref' in property:
-                    classname = self._get_classname_from_ref(property['$ref'])
-                    self._write(2, 'if isinstance(%s, %s) is True:' % (name, classname))
+                    ref_classname = self._get_classname_from_ref(property['$ref'])
+                    self._write(2, 'if isinstance(%s, %s) is True:' % (name, ref_classname))
                     self._write(3, 'self.%s = %s' % (name, name))
                     self._write(2, 'else:')
-                    self._write(3, "raise TypeError('%s must be of type %s')" % (name, classname))
+                    self._write(3, "raise TypeError('%s must be of type %s')" % (name, ref_classname))
                 else:
                     self._write(2, 'self.%s = %s' % (name, name))
 
