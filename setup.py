@@ -25,7 +25,7 @@ setup(
     description='The Abstract Open Traffic Generator Python Package',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/open-traffic-generator/abstract-python-package',
+    url='https://github.com/open-traffic-generator',
     author='ajbalogh',
     author_email='andy.balogh@keysight.com',
     license='MIT',
