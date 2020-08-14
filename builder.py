@@ -77,21 +77,16 @@ class Builder(object):
         for key, yobject in self._openapi['components']['schemas'].items():
             pieces = key.split('.')
             self._classname = key
-            path = self._src_dir
+            path = self._src_dir + '/'
             if '.' in key:
                 self._classname = pieces[-1]
-                for piece in pieces[0:-1]:
-                    path += '/' + piece.lower()
-                    if os.path.exists(path) is False:
-                        os.mkdir(path)
+                path += '.'.join(pieces[0:-1]).lower()
+            self._classfilename = path
+            print('generating %s in file %s...' % (self._classname, self._classfilename))
 
-            init_filename = os.path.join(path, '__init__.py')
-            if os.path.exists(init_filename) is False:
-                open(init_filename, 'w').close()
-
-            self._classfilename = path + '/' + self._classname.lower()
-            print('generating %s...' % self._classfilename)
-            with open(self._classfilename + '.py', 'w') as self._fid:
+            with open(self._classfilename + '.py', 'a') as self._fid:
+                self._write(0)
+                self._write(0)
                 self._write(0, 'class %s(object):' % self._classname)
                 self._write(1, '"""%s class' % key)
                 self._write(1)
@@ -104,7 +99,7 @@ class Builder(object):
                 args = ''
                 choice_tuples = []
                 for name, property in yobject['properties'].items():
-                    args += '%s%s' % (', ', name) 
+                    args += '%s%s=None' % (', ', name) 
                     if name == 'choice':
                         for choice_enum in property['enum']:
                             choice = yobject['properties'][choice_enum]
@@ -132,13 +127,13 @@ class Builder(object):
                 choices.append(choice_tuple[0])
             self._write(2, 'if isinstance(choice, (%s)) is False:' % (', '.join(choices)))
             self._write(3, "raise TypeError('choice must be of type: %s')" % (', '.join(choices)))
-            self._write(2, "self.__setattr__('choice',%s._CHOICE_MAP[choice.__class__.__name__])" % classname)
-            self._write(2, "self.__setattr__(%s._CHOICE_MAP[choice.__class__.__name__], choice)" % classname)
+            self._write(2, "self.__setattr__('choice', %s._CHOICE_MAP[choice.__class__.__name__])" % classname)
+            self._write(2, "self.__setattr__(%s._CHOICE_MAP[choice.__class__.__name__], choice)" % classname)
         else:
             for name, property in schema['properties'].items():
                 if '$ref' in property:
                     ref_classname = self._get_classname_from_ref(property['$ref'])
-                    self._write(2, 'if isinstance(%s, %s) is True:' % (name, ref_classname))
+                    self._write(2, 'if isinstance(%s, (%s, type(None))) is True:' % (name, ref_classname))
                     self._write(3, 'self.%s = %s' % (name, name))
                     self._write(2, 'else:')
                     self._write(3, "raise TypeError('%s must be of type %s')" % (name, ref_classname))
@@ -221,8 +216,8 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, 
-        clone_and_build=True)
+    builder = Builder(dependencies=False, 
+        clone_and_build=False)
 
     import yaml
     from jsonpath_ng import jsonpath, parse

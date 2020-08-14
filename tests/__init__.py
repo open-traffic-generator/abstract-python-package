@@ -1,2 +1,3 @@
 import sys
-sys.path.append(-1, '../abstract_traffic_generator')
+import os
+sys.path.insert(-1, os.path.abspath('../abstract_open_traffic_generator'))

@@ -3,10 +3,10 @@ python:
 - '3.8.5'
 script:
 - python builder.py
-# - python -m unittest discover --start-directory tests
+- python -m pytest tests
 deploy:
   provider: pypi
-  distributions: 'bdist_wheel'
+  distributions: 'sdist bdist_wheel'
   skip_cleanup: true
   skip_existing: true
   username: __token__
