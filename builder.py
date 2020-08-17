@@ -85,8 +85,6 @@ class Builder(object):
             print('generating %s in file %s...' % (self._classname, self._classfilename))
 
             with open(self._classfilename + '.py', 'a') as self._fid:
-                if len(pieces) > 2:
-                    self._write(0, 'from abstract_open_traffic_generator.%s import *' % '_'.join(pieces[0:-2]).lower())
                 self._write(0)
                 self._write(0)
                 self._write(0, 'class %s(object):' % self._classname)
@@ -112,14 +110,14 @@ class Builder(object):
                             choice = yobject['properties'][choice_enum]
                             if '$ref' in choice:
                                 choice_classname = self._get_classname_from_ref(choice['$ref'])
-                                choice_tuples.append((choice_classname, choice_enum))
+                                choice_tuples.append((choice_classname, choice_enum, choice['$ref']))
                             elif choice['type'] == 'string':
-                                choice_tuples.append(('str', choice_enum))
+                                choice_tuples.append(('str', choice_enum, None))
                             elif choice['type'] in ['number', 'integer']:
-                                choice_tuples.append(('float', choice_enum))
-                                choice_tuples.append(('int', choice_enum))
+                                choice_tuples.append(('float', choice_enum, None))
+                                choice_tuples.append(('int', choice_enum, None))
                             elif choice['type'] == 'array':
-                                choice_tuples.append(('list', choice_enum))
+                                choice_tuples.append(('list', choice_enum, None))
                 if len(choice_tuples) > 0:
                     args = ', choice'
                     self._write(1, '_CHOICE_MAP = {')
@@ -132,6 +130,9 @@ class Builder(object):
 
     def _write_data_properties(self, schema, classname, choice_tuples):
         if len(choice_tuples) > 0:
+            for choice_tuple in choice_tuples:
+                if choice_tuple[2] is not None:
+                    self._write(2, self._get_import_from_ref(choice_tuple[2]))
             choices = []
             for choice_tuple in choice_tuples:
                 choices.append(choice_tuple[0])
@@ -142,13 +143,26 @@ class Builder(object):
         else:
             for name, property in schema['properties'].items():
                 if '$ref' in property:
-                    ref_classname = self._get_classname_from_ref(property['$ref'])
-                    self._write(2, 'if isinstance(%s, (%s, type(None))) is True:' % (name, ref_classname))
-                    self._write(3, 'self.%s = %s' % (name, name))
-                    self._write(2, 'else:')
-                    self._write(3, "raise TypeError('%s must be of type %s')" % (name, ref_classname))
-                else:
-                    self._write(2, 'self.%s = %s' % (name, name))
+                    self._write(2, self._get_import_from_ref(property['$ref']))
+            for name, property in schema['properties'].items():
+                restriction = ''
+                if '$ref' in property:
+                    restriction = '(%s, type(None))' % self._get_classname_from_ref(property['$ref'])
+                elif property['type'] in ['number', 'integer']:
+                    restriction = '(float, int, type(None))'
+                elif property['type'] == 'string':
+                    restriction = '(str, type(None))'
+                elif property['type'] == 'array':
+                    restriction = '(list, type(None))'
+                self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
+                self._write(3, 'self.%s = %s' % (name, name))
+                self._write(2, 'else:')
+                self._write(3, "raise TypeError('%s must be an instance of %s')" % (name, restriction))
+
+    def _get_import_from_ref(self, ref):
+        filename = '_'.join(ref.lower().split('#/components/schemas/')[-1].split('.')[0:-1])
+        classname = self._get_classname_from_ref(ref)
+        return 'from abstract_open_traffic_generator.%s import %s' % (filename, classname)
 
     def _get_classname_from_ref(self, ref):
         final_piece = ref.split('/')[-1]
