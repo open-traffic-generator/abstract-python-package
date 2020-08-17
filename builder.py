@@ -80,11 +80,13 @@ class Builder(object):
             path = self._src_dir + '/'
             if '.' in key:
                 self._classname = pieces[-1]
-                path += '.'.join(pieces[0:-1]).lower()
+                path += '_'.join(pieces[0:-1]).lower()
             self._classfilename = path
             print('generating %s in file %s...' % (self._classname, self._classfilename))
 
             with open(self._classfilename + '.py', 'a') as self._fid:
+                if len(pieces) > 2:
+                    self._write(0, 'from abstract_open_traffic_generator.%s import *' % '_'.join(pieces[0:-2]).lower())
                 self._write(0)
                 self._write(0)
                 self._write(0, 'class %s(object):' % self._classname)
@@ -96,6 +98,11 @@ class Builder(object):
                     for sentence in line.split('. '):
                         self._write(1, sentence)
                 self._write(1, '"""')
+                if 'x-constants' in yobject.keys():
+                    self._write(1)
+                    for constant, value in yobject['x-constants'].items():
+                        self._write(1, '%s = %s' % (constant.upper(), value))
+                    self._write(1)
                 args = ''
                 choice_tuples = []
                 for name, property in yobject['properties'].items():
@@ -108,6 +115,9 @@ class Builder(object):
                                 choice_tuples.append((choice_classname, choice_enum))
                             elif choice['type'] == 'string':
                                 choice_tuples.append(('str', choice_enum))
+                            elif choice['type'] in ['number', 'integer']:
+                                choice_tuples.append(('float', choice_enum))
+                                choice_tuples.append(('int', choice_enum))
                             elif choice['type'] == 'array':
                                 choice_tuples.append(('list', choice_enum))
                 if len(choice_tuples) > 0:
@@ -127,8 +137,8 @@ class Builder(object):
                 choices.append(choice_tuple[0])
             self._write(2, 'if isinstance(choice, (%s)) is False:' % (', '.join(choices)))
             self._write(3, "raise TypeError('choice must be of type: %s')" % (', '.join(choices)))
-            self._write(2, "self.__setattr__('choice', %s._CHOICE_MAP[choice.__class__.__name__])" % classname)
-            self._write(2, "self.__setattr__(%s._CHOICE_MAP[choice.__class__.__name__], choice)" % classname)
+            self._write(2, "self.__setattr__('choice', %s._CHOICE_MAP[type(choice).__name__])" % classname)
+            self._write(2, "self.__setattr__(%s._CHOICE_MAP[type(choice).__name__], choice)" % classname)
         else:
             for name, property in schema['properties'].items():
                 if '$ref' in property:
@@ -216,8 +226,8 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, 
-        clone_and_build=True)
+    builder = Builder(dependencies=False, 
+        clone_and_build=False)
 
     import yaml
     from jsonpath_ng import jsonpath, parse

@@ -1,13 +1,13 @@
 import pytest
 from abstract_open_traffic_generator.flow import *
+from abstract_open_traffic_generator.flow_ipv4 import Priority, Dscp
 from abstract_open_traffic_generator.port import *
 
 
-def test_port_traffic():
-    # tx = Port(name='Tx Port', location='1.1.1.1/1/1')
-    # rx = Port(name='Rx Port', location='1.1.1.1/1/2')
+def test_port_traffic(b2b_ports):
+    # priority = Priority(Dscp(phb=0))
     # ipv4 = Ipv4(src='0.0.0.1', dst='0.0.0.2', 
-    #     priority=Dscp(phb=Dscp.PHB_EF46, ecn=Dscp.ECN_CAPABLE_10))
+    #     priority=Ipv4.Dscp(phb=Dscp.PHB_EF46, ecn=Dscp.ECN_CAPABLE_10))
     # background = Flow(name='Background Traffic', 
     #     endpoint=PortEndpoint(tx=tx.name),
     #     packet=[Ethernet(), Vlan(), ipv4])
