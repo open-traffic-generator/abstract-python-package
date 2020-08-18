@@ -3,9 +3,9 @@ python:
   - 3.8
   - 2.7
 script: 
-  - python3 builder.py
-  - python2 -m pytest tests
-  - python3 -m pytest tests
+  - /usr/bin/python3.8 builder.py
+  - /usr/bin/python2.7 -m pytest tests
+  - /usr/bin/python3.8 -m pytest tests
 deploy:
   provider: pypi
   distributions: 'sdist bdist_wheel'
