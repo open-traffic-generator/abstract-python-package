@@ -103,7 +103,11 @@ class Builder(object):
                 for name, property in yobject['properties'].items():
                     if 'description' not in property:
                         property['description'] = 'TBD'
-                    self._write(1, "- %s (type): %s" % (name, property['description']))
+                    if '$ref' in property:
+                        type = self._get_classname_from_ref(property['$ref'])
+                    else:
+                        type = property['type']
+                    self._write(1, "- %s (%s): %s" % (name, type, property['description']))
                 self._write(1, '"""')
 
                 if 'x-constants' in yobject.keys():
