@@ -85,17 +85,27 @@ class Builder(object):
             print('generating %s in file %s...' % (self._classname, self._classfilename))
 
             with open(self._classfilename + '.py', 'a') as self._fid:
-                self._write(0)
-                self._write(0)
+                self._write()
+                self._write()
                 self._write(0, 'class %s(object):' % self._classname)
+                
+                # class documentation
                 self._write(1, '"""%s class' % key)
-                self._write(1)
+                self._write()
                 if 'description' not in yobject:
                     yobject['description'] = 'TBD'
                 for line in yobject['description'].split('\n'):
                     for sentence in line.split('. '):
                         self._write(1, sentence)
+                self._write()
+                self._write(1, "Args")
+                self._write(1, "----")
+                for name, property in yobject['properties'].items():
+                    if 'description' not in property:
+                        property['description'] = 'TBD'
+                    self._write(1, "- %s (type): %s" % (name, property['description']))
                 self._write(1, '"""')
+
                 if 'x-constants' in yobject.keys():
                     self._write(1)
                     for constant, value in yobject['x-constants'].items():
@@ -171,7 +181,7 @@ class Builder(object):
         else:
             return final_piece
 
-    def _write(self, indent, line=''):
+    def _write(self, indent=0, line=''):
         self._fid.write('\t' * indent + line + '\n')
 
     def _bundle(self, base_dir, api_filename, output_filename):
