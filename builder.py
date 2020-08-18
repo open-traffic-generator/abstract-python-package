@@ -103,10 +103,7 @@ class Builder(object):
                 for name, property in yobject['properties'].items():
                     if 'description' not in property:
                         property['description'] = 'TBD'
-                    if '$ref' in property:
-                        type = self._get_classname_from_ref(property['$ref'])
-                    else:
-                        type = property['type']
+                    type = self._get_type_restriction(property)
                     self._write(1, "- %s (%s): %s" % (name, type, property['description']))
                 self._write(1, '"""')
 
@@ -143,10 +140,14 @@ class Builder(object):
         return self
 
     def _write_data_properties(self, schema, classname, choice_tuples):
+        import_lines = []
         if len(choice_tuples) > 0:
             for choice_tuple in choice_tuples:
                 if choice_tuple[2] is not None:
-                    self._write(2, self._get_import_from_ref(choice_tuple[2]))
+                    import_line = self._get_import_from_ref(choice_tuple[2])
+                    if import_line not in import_lines:
+                        self._write(2, import_line)
+                        import_lines.append(import_line)
             choices = []
             for choice_tuple in choice_tuples:
                 choices.append(choice_tuple[0])
@@ -157,21 +158,36 @@ class Builder(object):
         else:
             for name, property in schema['properties'].items():
                 if '$ref' in property:
-                    self._write(2, self._get_import_from_ref(property['$ref']))
+                    import_line = self._get_import_from_ref(property['$ref'])
+                    if import_line not in import_lines:
+                        self._write(2, import_line)
+                        import_lines.append(import_line)
             for name, property in schema['properties'].items():
-                restriction = ''
-                if '$ref' in property:
-                    restriction = '(%s, type(None))' % self._get_classname_from_ref(property['$ref'])
-                elif property['type'] in ['number', 'integer']:
-                    restriction = '(float, int, type(None))'
-                elif property['type'] == 'string':
-                    restriction = '(str, type(None))'
-                elif property['type'] == 'array':
-                    restriction = '(list, type(None))'
+                restriction = self._get_isinstance_restriction(property)
                 self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
                 self._write(3, 'self.%s = %s' % (name, name))
                 self._write(2, 'else:')
                 self._write(3, "raise TypeError('%s must be an instance of %s')" % (name, restriction))
+
+    def _get_isinstance_restriction(self, property):
+        if '$ref' in property:
+            return '(%s, type(None))' % self._get_classname_from_ref(property['$ref'])
+        elif property['type'] in ['number', 'integer']:
+            return '(float, int, type(None))'
+        elif property['type'] == 'string':
+            return '(str, type(None))'
+        elif property['type'] == 'array':
+            return '(list, type(None))'
+
+    def _get_type_restriction(self, property):
+        if '$ref' in property:
+            return 'Union[%s, type(None)]' % self._get_classname_from_ref(property['$ref'])
+        elif property['type'] in ['number', 'integer']:
+            return 'Union[float, int, type(None)]'
+        elif property['type'] == 'string':
+            return 'Union[str, type(None)]'
+        elif property['type'] == 'array':
+            return 'Union[list[%s], type(None)]' % self._get_type_restriction(property['items'])
 
     def _get_import_from_ref(self, ref):
         filename = '_'.join(ref.lower().split('#/components/schemas/')[-1].split('.')[0:-1])
@@ -254,8 +270,8 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=False, 
-        clone_and_build=False)
+    builder = Builder(dependencies=True, 
+        clone_and_build=True)
 
     import yaml
     from jsonpath_ng import jsonpath, parse
