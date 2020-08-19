@@ -181,6 +181,9 @@ class Builder(object):
 
     def _get_type_restriction(self, property):
         if '$ref' in property:
+            ref_obj = self._get_object_from_ref(property['$ref'])
+            if 'description' in ref_obj:
+                property['description'] = ref_obj['description']
             return 'Union[%s, type(None)]' % self._get_classname_from_ref(property['$ref'])
         elif property['type'] in ['number', 'integer']:
             return 'Union[float, int, type(None)]'
@@ -188,6 +191,12 @@ class Builder(object):
             return 'Union[str, type(None)]'
         elif property['type'] == 'array':
             return 'Union[list[%s], type(None)]' % self._get_type_restriction(property['items'])
+
+    def _get_object_from_ref(self, ref):
+        from jsonpath_ng import jsonpath, parse
+        pieces = ref.split('/')
+        json_path = '$.%s."%s"' % ('.'.join(pieces[1:-1]), pieces[-1])
+        return parse(json_path).find(self._openapi)[0].value
 
     def _get_import_from_ref(self, ref):
         filename = '_'.join(ref.lower().split('#/components/schemas/')[-1].split('.')[0:-1])
@@ -270,11 +279,9 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, 
-        clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
 
     import yaml
-    from jsonpath_ng import jsonpath, parse
 
     builder.generate()
 
