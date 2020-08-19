@@ -5,6 +5,7 @@ import os
 import stat
 import subprocess
 import shutil
+import re
 import datetime
 
 
@@ -94,9 +95,8 @@ class Builder(object):
                 self._write()
                 if 'description' not in yobject:
                     yobject['description'] = 'TBD'
-                for line in yobject['description'].split('\n'):
-                    for sentence in line.split('. '):
-                        self._write(1, sentence)
+                for line in re.sub('\n|\t|\s|\s+', ' ', yobject['description']).split('-'):
+                    self._write(1, '%s' % line)
                 self._write()
                 self._write(1, "Args")
                 self._write(1, "----")
@@ -104,7 +104,7 @@ class Builder(object):
                     if 'description' not in property:
                         property['description'] = 'TBD'
                     type = self._get_type_restriction(property)
-                    self._write(1, "- %s (%s): %s" % (name, type, property['description']))
+                    self._write(1, "- %s (%s): %s" % (name, type, property['description'].replace('\n', ' ')))
                 self._write(1, '"""')
 
                 # constants
@@ -213,7 +213,7 @@ class Builder(object):
             return final_piece
 
     def _write(self, indent=0, line=''):
-        self._fid.write('\t' * indent + line + '\n')
+        self._fid.write('    ' * indent + line + '\n')
 
     def _bundle(self, base_dir, api_filename, output_filename):
         print('bundling started')
@@ -281,7 +281,7 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
 
     import yaml
 

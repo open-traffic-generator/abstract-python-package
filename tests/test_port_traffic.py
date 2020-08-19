@@ -6,9 +6,11 @@ from abstract_open_traffic_generator.port import *
 
 
 def test_port_traffic(serializer, tx, rx):
+    dscp = Dscp(phb=Pattern(Dscp.PHB_EF46), 
+        ecn=Pattern(Dscp.ECN_CAPABLE_TRANSPORT_1))
     ipv4 = Ipv4(src=Pattern('1.1.1.1'), 
         dst=Pattern(Increment(start='1.1.2.1', step='0.0.0.1', count=10)), 
-        priority=Priority(Dscp(phb=Pattern(Dscp.PHB_EF46), ecn=Pattern(Dscp.ECN_CAPABLE_TRANSPORT_1))))
+        priority=Priority(dscp))
     background = Flow(name='Background Traffic', 
         endpoint=Endpoint(PortEndpoint(tx_port=tx.name)),
         packet=[Header(Ethernet()), Header(Vlan()), Header(ipv4)],
