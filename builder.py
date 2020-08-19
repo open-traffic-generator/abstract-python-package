@@ -107,11 +107,13 @@ class Builder(object):
                     self._write(1, "- %s (%s): %s" % (name, type, property['description']))
                 self._write(1, '"""')
 
+                # constants
                 if 'x-constants' in yobject.keys():
                     self._write(1)
                     for constant, value in yobject['x-constants'].items():
-                        self._write(1, '%s = %s' % (constant.upper(), value))
+                        self._write(1, "%s = '%s'" % (constant.upper(), value))
                     self._write(1)
+
                 args = ''
                 choice_tuples = []
                 for name, property in yobject['properties'].items():
