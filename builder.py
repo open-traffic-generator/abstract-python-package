@@ -17,7 +17,6 @@ class Builder(object):
     def __init__(self, dependencies=True, clone_and_build=True):
         self.__python = os.path.normpath(sys.executable)
         self.__python_dir = os.path.dirname(self.__python)
-        self.__pip = os.path.normpath('%s/Scripts/pip' % self.__python_dir)
         self._src_dir = './abstract_open_traffic_generator'
         self._dependencies = dependencies
         self._clone_and_build = clone_and_build
@@ -34,7 +33,9 @@ class Builder(object):
         for package in packages:
             print('installing dependency %s...' % package)
             process_args = [
-                self.__pip,
+                self.__python,
+                '-m',
+                'pip',
                 'install',
                 '-U',
                 package
