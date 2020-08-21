@@ -77,9 +77,44 @@ class Builder(object):
         with open('./models/openapi.yaml') as fid:
             self._openapi =  yaml.safe_load(fid)
         os.mkdir(self._src_dir)
-        self._write_data_class()
+        self._write_component_schemas()
+        self._write_paths()
 
-    def _write_data_class(self):
+    def _write_paths(self):
+        api_filename = self._src_dir + '/api.py'
+        with open(api_filename, 'a') as self._fid:
+            self._write()
+            self._write()
+            self._write(0, 'class Api(object):')
+            self._write(1, '"""%s' % 'TBD')
+            self._write(1, 'Args')
+            self._write(1, '----')
+            self._write(1, '- address (str): The address of the traffic generator')
+            self._write(1, '"""')
+            self._write(1, 'def __init__(self, address):')
+            self._write(2, 'raise NotImplementedError')
+
+        for method in self._get_api_methods():
+            pieces = method['operationId'].split('.')
+            self._method_name = method['operationId'].replace('.', '_').lower()
+            print('generating %s in file %s...' % (self._method_name, api_filename))
+
+            with open(api_filename, 'a') as self._fid:
+                self._write()
+                self._write(1, 'def %s(self, content):' % self._method_name)
+                self._write(2, '"""%s' % 'TBD')
+                self._write(2, '"""')
+                self._write(2, 'raise NotImplementedError')
+
+    def _get_api_methods(self):
+        methods = []
+        for key, yobject in self._openapi['paths'].items():
+            for rest_method in yobject:
+                if rest_method.lower() in ['get', 'post', 'put', 'patch', 'delete']:
+                    methods.append(yobject[rest_method])
+        return methods
+
+    def _write_component_schemas(self):
         for key, yobject in self._openapi['components']['schemas'].items():
             pieces = key.split('.')
             self._classname = key
@@ -288,7 +323,7 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=True)
 
     import yaml
 
