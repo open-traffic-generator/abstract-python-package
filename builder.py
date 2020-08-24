@@ -87,12 +87,7 @@ class Builder(object):
             self._write()
             self._write(0, 'class Api(object):')
             self._write(1, '"""%s' % 'TBD')
-            self._write(1, 'Args')
-            self._write(1, '----')
-            self._write(1, '- address (str): The address of the traffic generator')
             self._write(1, '"""')
-            self._write(1, 'def __init__(self, address):')
-            self._write(2, 'raise NotImplementedError')
 
         for method in self._get_api_methods():
             pieces = method['operationId'].split('.')
