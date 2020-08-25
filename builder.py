@@ -125,6 +125,22 @@ class Builder(object):
                 self._write()
                 self._write(0, 'class %s(object):' % self._classname)
                 
+                # create a list of any choice tuples
+                choice_tuples = []
+                if 'choice' in yobject['properties']:
+                    for choice_enum in yobject['properties']['choice']['enum']:
+                        choice = yobject['properties'][choice_enum]
+                        if '$ref' in choice:
+                            choice_classname = self._get_classname_from_ref(choice['$ref'])
+                            choice_tuples.append((choice_classname, choice_enum, choice['$ref']))
+                        elif choice['type'] == 'string':
+                            choice_tuples.append(('str', choice_enum, None))
+                        elif choice['type'] in ['number', 'integer']:
+                            choice_tuples.append(('float', choice_enum, None))
+                            choice_tuples.append(('int', choice_enum, None))
+                        elif choice['type'] == 'array':
+                            choice_tuples.append(('list', choice_enum, None))
+
                 # class documentation
                 self._write(1, '"""%s class' % key)
                 self._write()
@@ -138,10 +154,11 @@ class Builder(object):
                 self._write(1, "Args")
                 self._write(1, "----")
                 for name, property in yobject['properties'].items():
-                    if 'description' not in property:
-                        property['description'] = 'TBD'
-                    type = self._get_type_restriction(property)
-                    self._write(1, "- %s (%s): %s" % (name, type, property['description'].replace('\n', ' ')))
+                    if len([item for item in choice_tuples if item[1] == name]) == 0:
+                        if 'description' not in property:
+                            property['description'] = 'TBD'
+                        type = self._get_type_restriction(property)
+                        self._write(1, "- %s (%s): %s" % (name, type, property['description'].replace('\n', ' ')))
                 self._write(1, '"""')
 
                 # constants
@@ -150,30 +167,19 @@ class Builder(object):
                     for constant, value in yobject['x-constants'].items():
                         self._write(1, "%s = '%s'" % (constant.upper(), value))
                     self._write(1)
-
-                args = ''
-                choice_tuples = []
-                for name, property in yobject['properties'].items():
-                    args += '%s%s=None' % (', ', name) 
-                    if name == 'choice':
-                        for choice_enum in property['enum']:
-                            choice = yobject['properties'][choice_enum]
-                            if '$ref' in choice:
-                                choice_classname = self._get_classname_from_ref(choice['$ref'])
-                                choice_tuples.append((choice_classname, choice_enum, choice['$ref']))
-                            elif choice['type'] == 'string':
-                                choice_tuples.append(('str', choice_enum, None))
-                            elif choice['type'] in ['number', 'integer']:
-                                choice_tuples.append(('float', choice_enum, None))
-                                choice_tuples.append(('int', choice_enum, None))
-                            elif choice['type'] == 'array':
-                                choice_tuples.append(('list', choice_enum, None))
+                
+                # choice map
                 if len(choice_tuples) > 0:
-                    args = ', choice'
                     self._write(1, '_CHOICE_MAP = {')
                     for choice_tuple in choice_tuples:
                         self._write(2, "'%s': '%s'," % (choice_tuple[0], choice_tuple[1]))
                     self._write(1, '}')
+
+                # init args
+                args = ''
+                for name, property in yobject['properties'].items():
+                    if len([item for item in choice_tuples if item[1] == name]) == 0:
+                        args += '%s%s=None' % (', ', name) 
                 self._write(1, 'def __init__(self%s):' % args)
                 self._write_data_properties(yobject, self._classname, choice_tuples)
         return self
@@ -194,14 +200,15 @@ class Builder(object):
             self._write(3, "raise TypeError('choice must be of type: %s')" % (', '.join(choices)))
             self._write(2, "self.__setattr__('choice', %s._CHOICE_MAP[type(choice).__name__])" % classname)
             self._write(2, "self.__setattr__(%s._CHOICE_MAP[type(choice).__name__], choice)" % classname)
-        else:
-            for name, property in schema['properties'].items():
-                if '$ref' in property:
-                    import_line = self._get_import_from_ref(property['$ref'])
-                    if import_line not in import_lines:
-                        self._write(2, import_line)
-                        import_lines.append(import_line)
-            for name, property in schema['properties'].items():
+
+        for name, property in schema['properties'].items():
+            if '$ref' in property:
+                import_line = self._get_import_from_ref(property['$ref'])
+                if import_line not in import_lines:
+                    self._write(2, import_line)
+                    import_lines.append(import_line)
+        for name, property in schema['properties'].items():
+            if len([item for item in choice_tuples if item[1] == name]) == 0 and name != 'choice':
                 restriction = self._get_isinstance_restriction(property)
                 self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
                 self._write(3, 'self.%s = %s' % (name, name))
@@ -318,7 +325,7 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
 
     import yaml
 
