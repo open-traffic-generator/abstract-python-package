@@ -144,7 +144,7 @@ class Builder(object):
             self._classfilename = path
             print('generating %s in file %s...' % (self._classname, self._classfilename))
 
-            with open(self._classfilename + '.py', 'a') as self._fid:
+            with open(self._classfilename + '.py', 'a', newline='\n') as self._fid:
                 self._write()
                 self._write()
                 self._write(0, 'class %s(object):' % self._classname)
@@ -170,10 +170,11 @@ class Builder(object):
                 self._write()
                 if 'description' not in yobject:
                     yobject['description'] = 'TBD'
-                # remove tabs, double spaces
-                description = re.sub('\n|\t|\s|\s+', ' ', yobject['description'])
-                for line in description.split('-'):
-                    self._write(1, '%s' % line)
+                # remove tabs, multiple spaces
+                description = re.sub('\n', '.', yobject['description'])
+                description = re.sub('\s+', ' ', description)
+                for line in re.split('\.', description):
+                    self._write(1, '%s' % line.strip())
                 self._write()
                 self._write(1, "Args")
                 self._write(1, "----")
@@ -182,7 +183,13 @@ class Builder(object):
                         if 'description' not in property:
                             property['description'] = 'TBD'
                         type = self._get_type_restriction(property)
-                        self._write(1, "- %s (%s): %s" % (name, type, property['description'].replace('\n', ' ')))
+                        description = re.sub('\s+', ' ', property['description'])
+                        lines = re.split('\n|-|\.', description)
+                        self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
+                        for line in lines[1:]:
+                            line = line.strip()
+                            if len(line) > 0:
+                                self._write(2, line.strip())
                 self._write(1, '"""')
 
                 # constants
