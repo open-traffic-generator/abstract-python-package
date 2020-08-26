@@ -164,6 +164,8 @@ class Builder(object):
                             choice_tuples.append(('int', choice_enum, None))
                         elif choice['type'] == 'array':
                             choice_tuples.append(('list', choice_enum, None))
+                        elif choice['type'] == 'boolean':
+                            choice_tuples.append(('boolean', choice_enum, None))
 
                 # class documentation
                 self._write(1, '"""Generated from OpenAPI #/components/schemas/%s model' % key)
@@ -179,17 +181,21 @@ class Builder(object):
                 self._write(1, "Args")
                 self._write(1, "----")
                 for name, property in yobject['properties'].items():
-                    if len([item for item in choice_tuples if item[1] == name]) == 0:
-                        if 'description' not in property:
-                            property['description'] = 'TBD'
+                    if len([item for item in choice_tuples if item[1] == name]) > 0:
+                        continue
+                    if name == 'choice':
+                        type = 'Union[%s]' % ', '.join([item[0] for item in choice_tuples])
+                    else:
                         type = self._get_type_restriction(property)
-                        description = re.sub('\s+', ' ', property['description'])
-                        lines = re.split('\n|-|\.', description)
-                        self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
-                        for line in lines[1:]:
-                            line = line.strip()
-                            if len(line) > 0:
-                                self._write(2, line.strip())
+                    if 'description' not in property:
+                        property['description'] = 'TBD'
+                    description = re.sub('\s+', ' ', property['description'])
+                    lines = re.split('\n|-|\.', description)
+                    self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
+                    for line in lines[1:]:
+                        line = line.strip()
+                        if len(line) > 0:
+                            self._write(2, line.strip())
                 self._write(1, '"""')
 
                 # constants
@@ -255,19 +261,26 @@ class Builder(object):
             return '(str, type(None))'
         elif property['type'] == 'array':
             return '(list, type(None))'
+        elif property['type'] == 'boolean':
+            return '(boolean, type(None))'
 
     def _get_type_restriction(self, property):
         if '$ref' in property:
             ref_obj = self._get_object_from_ref(property['$ref'])
             if 'description' in ref_obj:
                 property['description'] = ref_obj['description']
-            return 'Union[%s, type(None)]' % self._get_classname_from_ref(property['$ref'])
+            return 'Union[%s]' % self._get_classname_from_ref(property['$ref'])
         elif property['type'] in ['number', 'integer']:
-            return 'Union[float, int, type(None)]'
+            return 'Union[float, int, None]'
         elif property['type'] == 'string':
-            return 'Union[str, type(None)]'
+            if 'enum' in property:
+                return 'Union[%s, None]' % ', '.join(property['enum'])                
+            else:
+                return 'Union[str, None]'
         elif property['type'] == 'array':
-            return 'Union[list[%s], type(None)]' % self._get_type_restriction(property['items'])
+            return 'Union[list[%s], None]' % self._get_type_restriction(property['items'])
+        elif property['type'] == 'boolean':
+            return 'Union[True, False]'
 
     def _get_object_from_ref(self, ref):
         from jsonpath_ng import jsonpath, parse
