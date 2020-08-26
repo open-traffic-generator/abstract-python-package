@@ -3,7 +3,6 @@ python:
   - 3.8
 script: 
   - python builder.py
-  - python -m pytest tests
 deploy:
   provider: pypi
   distributions: 'sdist bdist_wheel'

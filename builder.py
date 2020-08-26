@@ -20,8 +20,20 @@ class Builder(object):
         self._src_dir = './abstract_open_traffic_generator'
         self._dependencies = dependencies
         self._clone_and_build = clone_and_build
+        self._clean()
         self._install_dependencies()
         self._clone_models_and_build()
+
+    def _clean(self):
+        process_args = [
+            self.__python,
+            '-m',
+            'pip',
+            'uninstall',
+            '--yes',
+            'abstract-open-traffic-generator'
+        ]
+        subprocess.Popen(process_args, shell=False).wait()
 
     def _install_dependencies(self):
         if self._dependencies is False:
@@ -41,6 +53,16 @@ class Builder(object):
                 package
             ]
             subprocess.Popen(process_args, shell=False).wait()
+
+    def test(self):
+        process_args = [
+            self.__python,
+            '-m',
+            'pytest',
+            '-s',
+            'tests'
+        ]
+        subprocess.Popen(process_args, shell=False).wait()
 
     def _handleError(self, func, path, exc_info):
         if not os.access(path, os.W_OK):
@@ -71,14 +93,16 @@ class Builder(object):
         subprocess.Popen(process_args, cwd='./models', shell=False).wait()
 
     def generate(self):
+        from yaml import safe_load
         shutil.rmtree(self._src_dir, onerror=self._handleError)
         if os.path.exists(self._src_dir) is True:
             os.rmdir(self._src_dir)
         with open('./models/openapi.yaml') as fid:
-            self._openapi =  yaml.safe_load(fid)
+            self._openapi =  safe_load(fid)
         os.mkdir(self._src_dir)
         self._write_component_schemas()
         self._write_paths()
+        return self
 
     def _write_paths(self):
         api_filename = self._src_dir + '/api.py'
@@ -267,11 +291,12 @@ class Builder(object):
         print('bundling complete')
 
     def _read_file(self, base_dir, filename):
+        from yaml import safe_load
         filename = os.path.join(base_dir, filename)
         filename = os.path.abspath(os.path.normpath(filename))
         base_dir = os.path.dirname(filename)
         with open(filename) as fid:
-            yobject = yaml.safe_load(fid)
+            yobject = safe_load(fid)
         self._process_yaml_object(base_dir, yobject)
 
     def _process_yaml_object(self, base_dir, yobject):
@@ -325,9 +350,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
-
-    import yaml
-
-    builder.generate()
+    builder = Builder(dependencies=False, clone_and_build=False)
+    builder.generate().test()
 
