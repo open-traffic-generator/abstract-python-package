@@ -1,21 +1,17 @@
 import pytest
-from abstract_open_traffic_generator.port import *
 
 
 def test_choice(serializer):
-    physical = {
-        'address': '127.0.0.1', 
-        'board': 1, 
-        'port': 1
-    }
+    from abstract_open_traffic_generator.flow import Flow, Endpoint, PortEndpoint
     try:
-        port = Port(name='test', location=Location(physical))
+        flow = Flow(name='test', endpoint=PortEndpoint())
         assert('Expected a TypeError when assigning physical')
     except TypeError as e:
         print(e)
         pass
 
 def test_string(serializer):
+    from abstract_open_traffic_generator.port import Port
     try:
         port = Port(name=1)
         assert('Expected a TypeError when assigning name')

@@ -23,14 +23,14 @@ def serializer(request):
 
 @pytest.fixture(scope='module')
 def tx():
-    from abstract_open_traffic_generator.port import Port, Location, Physical
-    return Port(name='Tx', location=Location(Physical(address='127.0.0.1', board=1, port=1)))
+    from abstract_open_traffic_generator.port import Port
+    return Port(name='Tx', location='127.0.0.1;1;1', link_state='up')
 
 
 @pytest.fixture(scope='module')
 def rx():
-    from abstract_open_traffic_generator.port import Port, Location, Physical
-    return Port(name='Rx', location=Location(Physical(address='127.0.0.1', board=1, port=2)))
+    from abstract_open_traffic_generator.port import Port
+    return Port(name='Rx', location='127.0.0.1;1;2', link_state='up')
 
 
 @pytest.fixture(scope='module')
