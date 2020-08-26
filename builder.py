@@ -142,7 +142,7 @@ class Builder(object):
                             choice_tuples.append(('list', choice_enum, None))
 
                 # class documentation
-                self._write(1, '"""%s class' % key)
+                self._write(1, '"""Generated from OpenAPI #/components/schemas/%s model' % key)
                 self._write()
                 if 'description' not in yobject:
                     yobject['description'] = 'TBD'
