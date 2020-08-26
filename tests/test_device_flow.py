@@ -1,5 +1,5 @@
 import pytest
-from abstract_open_traffic_generator.state import Config
+from abstract_open_traffic_generator.config import Config
 from abstract_open_traffic_generator.flow import *
 from abstract_open_traffic_generator.flow_ipv4 import Priority, Dscp
 from abstract_open_traffic_generator.port import *

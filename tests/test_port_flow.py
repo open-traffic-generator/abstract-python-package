@@ -1,8 +1,7 @@
 import pytest
-from abstract_open_traffic_generator.state import Config
+from abstract_open_traffic_generator.config import Config
 from abstract_open_traffic_generator.flow import *
 from abstract_open_traffic_generator.flow_ipv4 import Priority, Dscp
-from abstract_open_traffic_generator.port import *
 
 
 def test_port_traffic(serializer, tx, rx):
@@ -17,7 +16,7 @@ def test_port_traffic(serializer, tx, rx):
         size=Size(512),
         rate=Rate(unit='pps', value=1000000),
         duration=Duration(Fixed(packets=0)))
-    config = Config(state='CREATE', ports=[tx], flows=[background])
+    config = Config(ports=[tx], flows=[background])
     print(serializer.json(config))
 
 
@@ -31,7 +30,7 @@ def test_port_pfc_pause_traffic(serializer, tx, rx):
         size=Size(64),
         rate=Rate(unit='pps', value=1000000),
         duration=Duration(Burst(packets=10000)))
-    config = Config(state='CREATE', ports=[tx], flows=[pfc_flow])
+    config = Config(ports=[tx], flows=[pfc_flow])
     print(serializer.json(config))
 
 
