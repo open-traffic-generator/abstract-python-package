@@ -15,6 +15,9 @@ class Builder(object):
     models repository.
     """
     def __init__(self, dependencies=True, clone_and_build=True):
+        if 'TRAVIS' in os.environ:
+            dependencies = True
+            clone_and_build = True
         self.__python = os.path.normpath(sys.executable)
         self.__python_dir = os.path.dirname(self.__python)
         self._src_dir = './abstract_open_traffic_generator'
