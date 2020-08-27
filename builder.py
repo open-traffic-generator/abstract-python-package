@@ -102,7 +102,13 @@ class Builder(object):
         os.mkdir(self._src_dir)
         self._write_component_schemas()
         self._write_paths()
+        self._write_init()
         return self
+
+    def _write_init(self):
+        filename = self._src_dir + '/__init__.py'
+        with open(filename, 'w') as self._fid:
+            pass
 
     def _write_paths(self):
         api_filename = self._src_dir + '/api.py'
@@ -173,10 +179,12 @@ class Builder(object):
                 if 'description' not in yobject:
                     yobject['description'] = 'TBD'
                 # remove tabs, multiple spaces
-                description = re.sub('\n', '.', yobject['description'])
+                description = re.sub('\n', '. ', yobject['description'])
                 description = re.sub('\s+', ' ', description)
-                for line in re.split('\.', description):
-                    self._write(1, '%s' % line.strip())
+                for line in re.split('\. ', description):
+                    line = re.sub('.$', '', line)
+                    if len(line) > 0:
+                        self._write(1, '%s  ' % line)
                 self._write()
                 self._write(1, "Args")
                 self._write(1, "----")
@@ -370,6 +378,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
     builder.generate().test()
 
