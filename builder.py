@@ -262,23 +262,23 @@ class Builder(object):
         elif property['type'] == 'array':
             return '(list, type(None))'
         elif property['type'] == 'boolean':
-            return '(boolean, type(None))'
+            return '(bool, type(None))'
 
     def _get_type_restriction(self, property):
         if '$ref' in property:
             ref_obj = self._get_object_from_ref(property['$ref'])
             if 'description' in ref_obj:
                 property['description'] = ref_obj['description']
-            return 'Union[%s]' % self._get_classname_from_ref(property['$ref'])
+            return '%s' % self._get_classname_from_ref(property['$ref'])
         elif property['type'] in ['number', 'integer']:
-            return 'Union[float, int, None]'
+            return 'Union[float, int]'
         elif property['type'] == 'string':
             if 'enum' in property:
-                return 'Union[%s, None]' % ', '.join(property['enum'])                
+                return 'Union[%s]' % ', '.join(property['enum'])                
             else:
-                return 'Union[str, None]'
+                return 'str'
         elif property['type'] == 'array':
-            return 'Union[list[%s], None]' % self._get_type_restriction(property['items'])
+            return 'list[%s]' % self._get_type_restriction(property['items'])
         elif property['type'] == 'boolean':
             return 'Union[True, False]'
 

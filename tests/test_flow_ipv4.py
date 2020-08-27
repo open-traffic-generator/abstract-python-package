@@ -23,7 +23,7 @@ def test_ipv4_list_priority_dscp(serializer):
 
 
 def test_ipv4_counter_priority_dscp(serializer):
-    phb_counter = Decrement(start='10', step='1', count=6)
+    phb_counter = Counter(start='10', step='1', count=6, up=True)
     dscp = Dscp(phb=Pattern(phb_counter))
     dscp_priority = Priority(dscp)
     print(serializer.json(dscp_priority))
@@ -37,15 +37,15 @@ def test_ipv4_priority_dscp_ecn(serializer):
 
 
 def test_ipv4_priority_raw(serializer):
-    counter = Increment(start='1', step='1', count=4)
+    counter = Counter(start='1', step='1', count=4, up=True)
     pattern = Pattern(counter)
     raw_priority = Priority(pattern)
     print(serializer.json(raw_priority))
 
 
 def test_ipv4(serializer):
-    ipv4 = Ipv4(src= Pattern(Increment(start='1.1.1.1', step='0.0.0.1', count=10)), 
-        dst=Pattern(Increment(start='1.1.2.1', step='0.0.0.1', count=10)), 
+    ipv4 = Ipv4(src= Pattern(Counter(start='1.1.1.1', step='0.0.0.1', count=10)), 
+        dst=Pattern(Counter(start='1.1.2.1', step='0.0.0.1', count=10)), 
         priority=Priority(Pattern(Priority.PRIORITY_RAW)))
     print(serializer.json(ipv4))
 

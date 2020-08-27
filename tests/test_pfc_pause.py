@@ -11,7 +11,7 @@ def test_pfc_pause_custom(serializer):
     pfc = PfcPause(src=Pattern('000001000001'),
         class_enable_vector=Pattern('0x0101'),
         pause_class_0=Pattern('0x0001'),
-        pause_class_4=Pattern(Increment(start='0', step='1', count=5)))
+        pause_class_4=Pattern(Counter(start='0', step='1', count=5)))
     print(serializer.json(pfc))
 
 
