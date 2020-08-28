@@ -185,7 +185,7 @@ class Builder(object):
                 description = re.sub('\n', '. ', yobject['description'])
                 description = re.sub('\s+', ' ', description)
                 for line in re.split('\. ', description):
-                    line = re.sub('.$', '', line)
+                    line = re.sub('\.$', '', line)
                     if len(line) > 0:
                         self._write(1, '%s  ' % line)
                 self._write()
@@ -384,6 +384,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=False, clone_and_build=False)
+    builder = Builder(dependencies=True, clone_and_build=True)
     builder.generate().test()
 
