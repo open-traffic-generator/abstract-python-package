@@ -227,7 +227,10 @@ class Builder(object):
                 args = ''
                 for name, property in yobject['properties'].items():
                     if len([item for item in choice_tuples if item[1] == name]) == 0:
-                        args += '%s%s=None' % (', ', name) 
+                        arg_type = 'None'
+                        if 'type' in property and property['type'] == 'array':
+                            arg_type = '[]'
+                        args += '%s%s=%s' % (', ', name, arg_type) 
                 self._write(1, 'def __init__(self%s):' % args)
                 self._write_data_properties(yobject, self._classname, choice_tuples)
         return self
