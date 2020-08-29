@@ -28,7 +28,7 @@ def test_devices(serializer):
     device_group = DeviceGroup(name='devicegroup',
                                devices=[device2])
     config = Config(
-        devices=[device_group]
+        device_groups=[device_group]
     )
     print(serializer.json(config))
 
