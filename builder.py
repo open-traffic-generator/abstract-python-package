@@ -201,7 +201,7 @@ class Builder(object):
                     if 'description' not in property:
                         property['description'] = 'TBD'
                     description = re.sub('\s+', ' ', property['description'])
-                    lines = re.split('\n|-|\.', description)
+                    lines = re.split('\n|-|\.$', description)
                     self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
                     for line in lines[1:]:
                         line = line.strip()
