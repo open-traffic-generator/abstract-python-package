@@ -230,6 +230,11 @@ class Builder(object):
                         arg_type = 'None'
                         if 'type' in property and property['type'] == 'array':
                             arg_type = '[]'
+                        elif 'default' in property:
+                            if property['type'] == 'string':
+                                arg_type = "'%s'" % property['default']
+                            else:
+                                arg_type ='%s' % property['default']
                         args += '%s%s=%s' % (', ', name, arg_type) 
                 self._write(1, 'def __init__(self%s):' % args)
                 self._write_data_properties(yobject, self._classname, choice_tuples)
@@ -384,6 +389,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
     builder.generate().test()
 
