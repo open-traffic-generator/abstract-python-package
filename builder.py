@@ -289,8 +289,10 @@ class Builder(object):
             if 'description' in ref_obj:
                 property['description'] = ref_obj['description']
             return '%s' % self._get_classname_from_ref(property['$ref'])
-        elif property['type'] in ['number', 'integer']:
+        elif property['type'] == 'number':
             return 'Union[float, int]'
+        elif property['type'] == 'integer':
+            return 'int'
         elif property['type'] == 'string':
             if 'enum' in property:
                 return 'Union[%s]' % ', '.join(property['enum'])                
