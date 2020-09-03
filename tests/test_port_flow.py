@@ -11,7 +11,7 @@ def test_port_traffic(serializer, tx, rx):
         dst=Pattern(Counter(start='1.1.2.1', step='0.0.0.1', count=10)), 
         priority=Priority(dscp))
     background = Flow(name='Background Traffic', 
-        endpoint=Endpoint(PortEndpoint(tx_port=tx.name)),
+        endpoint=Endpoint(PortEndpoint(tx_port_name=tx.name)),
         packet=[Header(Ethernet()), Header(Vlan()), Header(ipv4)],
         size=Size(512),
         rate=Rate(unit='pps', value=1000000),
@@ -25,7 +25,7 @@ def test_port_pfc_pause_traffic(serializer, tx, rx):
         src=Pattern('0000002030405'),
         control_op_code=Pattern('01'))
     pfc_flow = Flow(name='Pfc Traffic', 
-        endpoint=Endpoint(PortEndpoint(tx_port=tx.name)),
+        endpoint=Endpoint(PortEndpoint(tx_port_name=tx.name)),
         packet=[Header(pfc_pause)],
         size=Size(64),
         rate=Rate(unit='pps', value=1000000),

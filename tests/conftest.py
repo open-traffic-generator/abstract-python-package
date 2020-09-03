@@ -24,13 +24,13 @@ def serializer(request):
 @pytest.fixture(scope='module')
 def tx():
     from abstract_open_traffic_generator.port import Port
-    return Port(name='Tx', location='127.0.0.1;1;1', link_state='up')
+    return Port(name='Tx', location='127.0.0.1;1;1')
 
 
 @pytest.fixture(scope='module')
 def rx():
     from abstract_open_traffic_generator.port import Port
-    return Port(name='Rx', location='127.0.0.1;1;2', link_state='up')
+    return Port(name='Rx', location='127.0.0.1;1;2')
 
 
 @pytest.fixture(scope='module')
@@ -46,7 +46,7 @@ def port_ipv4_traffic(tx):
     ipv4 = Ipv4(src=Pattern('1.1.1.1'), 
         dst=Pattern('1.1.2.1'))
     return Flow(name='Port Based Ipv4 Traffic', 
-        endpoint=Endpoint(PortEndpoint(tx_port=tx.name)),
+        endpoint=Endpoint(PortEndpoint(tx_port_name=tx.name)),
         packet=[Header(eth), Header(vlan), Header(ipv4)],
         size=Size(512),
         rate=Rate(unit='pps', value=1000000))
