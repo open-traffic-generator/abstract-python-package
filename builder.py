@@ -80,8 +80,6 @@ class Builder(object):
             return
         print('cloning models...')
         shutil.rmtree('./models', onerror=self._handleError)
-        if os.path.exists('./models') is True:
-            os.rmdir('./models')
         process_args = [
             'git',
             'clone',
