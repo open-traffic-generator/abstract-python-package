@@ -158,8 +158,11 @@ class Builder(object):
                 
                 # create a list of any choice tuples
                 choice_tuples = []
-                if 'choice' in yobject['properties']:
+                if 'properties' in yobject and 'choice' in yobject['properties']:
                     for choice_enum in yobject['properties']['choice']['enum']:
+                        if choice_enum not in yobject['properties']:
+                            choice_tuples.append(('None', choice_enum, choice_enum))
+                            continue
                         choice = yobject['properties'][choice_enum]
                         if '$ref' in choice:
                             choice_classname = self._get_classname_from_ref(choice['$ref'])
@@ -186,25 +189,26 @@ class Builder(object):
                     line = re.sub('\.$', '', line)
                     if len(line) > 0:
                         self._write(1, '%s  ' % line)
-                self._write()
-                self._write(1, "Args")
-                self._write(1, "----")
-                for name, property in yobject['properties'].items():
-                    if len([item for item in choice_tuples if item[1] == name]) > 0:
-                        continue
-                    if name == 'choice':
-                        type = 'Union[%s]' % ', '.join([item[0] for item in choice_tuples])
-                    else:
-                        type = self._get_type_restriction(property)
-                    if 'description' not in property:
-                        property['description'] = 'TBD'
-                    description = re.sub('\s+', ' ', property['description'])
-                    lines = re.split('\n|-|\.$', description)
-                    self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
-                    for line in lines[1:]:
-                        line = line.strip()
-                        if len(line) > 0:
-                            self._write(2, line.strip())
+                if 'properties' in yobject:
+                    self._write()
+                    self._write(1, "Args")
+                    self._write(1, "----")
+                    for name, property in yobject['properties'].items():
+                        if len([item for item in choice_tuples if item[1] == name]) > 0:
+                            continue
+                        if name == 'choice':
+                            type = 'Union[%s]' % ', '.join([item[0] for item in choice_tuples])
+                        else:
+                            type = self._get_type_restriction(property)
+                        if 'description' not in property:
+                            property['description'] = 'TBD'
+                        description = re.sub('\s+', ' ', property['description'])
+                        lines = re.split('\n|-|\.$', description)
+                        self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
+                        for line in lines[1:]:
+                            line = line.strip()
+                            if len(line) > 0:
+                                self._write(2, line.strip())
                 self._write(1, '"""')
 
                 # constants
@@ -223,18 +227,21 @@ class Builder(object):
 
                 # init args
                 args = ''
-                for name, property in yobject['properties'].items():
-                    if len([item for item in choice_tuples if item[1] == name]) == 0:
-                        arg_type = 'None'
-                        if 'type' in property and property['type'] == 'array':
-                            arg_type = '[]'
-                        elif 'default' in property:
-                            if property['type'] == 'string':
-                                arg_type = "'%s'" % property['default']
-                            else:
-                                arg_type ='%s' % property['default']
-                        args += '%s%s=%s' % (', ', name, arg_type) 
+                if 'properties' in yobject:
+                    for name, property in yobject['properties'].items():
+                        if len([item for item in choice_tuples if item[1] == name]) == 0:
+                            arg_type = 'None'
+                            if 'type' in property and property['type'] == 'array':
+                                arg_type = '[]'
+                            elif 'default' in property:
+                                if property['type'] == 'string':
+                                    arg_type = "'%s'" % property['default']
+                                else:
+                                    arg_type ='%s' % property['default']
+                            args += '%s%s=%s' % (', ', name, arg_type) 
                 self._write(1, 'def __init__(self%s):' % args)
+                if len(args) == 0:
+                    self._write(2, 'pass')
                 self._write_data_properties(yobject, self._classname, choice_tuples)
         return self
 
@@ -255,19 +262,20 @@ class Builder(object):
             self._write(2, "self.__setattr__('choice', %s._CHOICE_MAP[type(choice).__name__])" % classname)
             self._write(2, "self.__setattr__(%s._CHOICE_MAP[type(choice).__name__], choice)" % classname)
 
-        for name, property in schema['properties'].items():
-            if '$ref' in property:
-                import_line = self._get_import_from_ref(property['$ref'])
-                if import_line not in import_lines:
-                    self._write(2, import_line)
-                    import_lines.append(import_line)
-        for name, property in schema['properties'].items():
-            if len([item for item in choice_tuples if item[1] == name]) == 0 and name != 'choice':
-                restriction = self._get_isinstance_restriction(property)
-                self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
-                self._write(3, 'self.%s = %s' % (name, name))
-                self._write(2, 'else:')
-                self._write(3, "raise TypeError('%s must be an instance of %s')" % (name, restriction))
+        if 'properties' in schema:
+            for name, property in schema['properties'].items():
+                if '$ref' in property:
+                    import_line = self._get_import_from_ref(property['$ref'])
+                    if import_line not in import_lines:
+                        self._write(2, import_line)
+                        import_lines.append(import_line)
+            for name, property in schema['properties'].items():
+                if len([item for item in choice_tuples if item[1] == name]) == 0 and name != 'choice':
+                    restriction = self._get_isinstance_restriction(property)
+                    self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
+                    self._write(3, 'self.%s = %s' % (name, name))
+                    self._write(2, 'else:')
+                    self._write(3, "raise TypeError('%s must be an instance of %s')" % (name, restriction))
 
     def _get_isinstance_restriction(self, property):
         if '$ref' in property:
