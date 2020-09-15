@@ -255,6 +255,8 @@ class Builder(object):
                         self._write(2, import_line)
                         import_lines.append(import_line)
             choices = []
+            if 'properties' in schema and len(schema['properties']) > 0:
+                choices.append('type(None)')
             for choice_tuple in choice_tuples:
                 choices.append(choice_tuple[0])
             self._write(2, 'if isinstance(choice, (%s)) is False:' % (', '.join(choices)))
