@@ -275,7 +275,10 @@ class Builder(object):
                 if len([item for item in choice_tuples if item[1] == name]) == 0 and name != 'choice':
                     restriction = self._get_isinstance_restriction(property)
                     self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
-                    self._write(3, 'self.%s = %s' % (name, name))
+                    if restriction == '(list, type(None))':
+                        self._write(3, 'self.%s = [] if %s is None else list(%s)' % (name, name, name))
+                    else:
+                        self._write(3, 'self.%s = %s' % (name, name))
                     self._write(2, 'else:')
                     self._write(3, "raise TypeError('%s must be an instance of %s')" % (name, restriction))
 
