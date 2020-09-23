@@ -202,13 +202,14 @@ class Builder(object):
                             type = self._get_type_restriction(property)
                         if 'description' not in property:
                             property['description'] = 'TBD'
+                        description = re.sub('\n', '. ', property['description'])
                         description = re.sub('\s+', ' ', property['description'])
-                        lines = re.split('\n|-|\.$', description)
+                        lines = re.split('\.', description)
                         self._write(1, "- %s (%s): %s" % (name, type, lines[0].strip()))
                         for line in lines[1:]:
                             line = line.strip()
                             if len(line) > 0:
-                                self._write(2, line.strip())
+                                self._write(1, ' %s' % line.strip())
                 self._write(1, '"""')
 
                 # constants
@@ -297,8 +298,12 @@ class Builder(object):
     def _get_type_restriction(self, property):
         if '$ref' in property:
             ref_obj = self._get_object_from_ref(property['$ref'])
+            description = ''
             if 'description' in ref_obj:
-                property['description'] = ref_obj['description']
+                description = ref_obj['description']
+            if 'description' in property:
+                description += property['description']
+            property['description'] = description
             return '%s' % self._get_classname_from_ref(property['$ref'])
         elif property['type'] == 'number':
             return 'Union[float, int]'
@@ -402,6 +407,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
     builder.generate().test()
 
