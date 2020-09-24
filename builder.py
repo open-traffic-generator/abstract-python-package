@@ -15,7 +15,7 @@ class Builder(object):
     models repository.
     """
     def __init__(self, dependencies=True, clone_and_build=True):
-        if 'TRAVIS' in os.environ:
+        if 'GITHUB_ACTION' in os.environ:
             dependencies = True
             clone_and_build = True
         self.__python = os.path.normpath(sys.executable)
@@ -148,6 +148,8 @@ class Builder(object):
             if '.' in key:
                 self._classname = pieces[-1]
                 path += '_'.join(pieces[0:-1]).lower()
+            else:
+                path += self._classname.lower()
             self._classfilename = path
             print('generating %s in file %s...' % (self._classname, self._classfilename))
 
@@ -159,10 +161,9 @@ class Builder(object):
                 # create a list of any choice tuples
                 choice_tuples = []
                 if 'properties' in yobject and 'choice' in yobject['properties']:
+                    if 'required' in yobject and 'choice' not in yobject['required']:
+                        choice_tuples.append(('None', choice_enum, choice_enum))
                     for choice_enum in yobject['properties']['choice']['enum']:
-                        if choice_enum not in yobject['properties']:
-                            choice_tuples.append(('None', choice_enum, choice_enum))
-                            continue
                         choice = yobject['properties'][choice_enum]
                         if '$ref' in choice:
                             choice_classname = self._get_classname_from_ref(choice['$ref'])
@@ -178,7 +179,7 @@ class Builder(object):
                             choice_tuples.append(('boolean', choice_enum, None))
 
                 # class documentation
-                self._write(1, '"""Generated from OpenAPI #/components/schemas/%s model' % key)
+                self._write(1, '"""Generated from OpenAPI schema object #/components/schemas/%s' % key)
                 self._write()
                 if 'description' not in yobject:
                     yobject['description'] = 'TBD'
@@ -256,8 +257,6 @@ class Builder(object):
                         self._write(2, import_line)
                         import_lines.append(import_line)
             choices = []
-            if 'properties' in schema and len(schema['properties']) > 0:
-                choices.append('type(None)')
             for choice_tuple in choice_tuples:
                 choices.append(choice_tuple[0])
             self._write(2, 'if isinstance(choice, (%s)) is False:' % (', '.join(choices)))
@@ -274,26 +273,32 @@ class Builder(object):
                         import_lines.append(import_line)
             for name, property in schema['properties'].items():
                 if len([item for item in choice_tuples if item[1] == name]) == 0 and name != 'choice':
-                    restriction = self._get_isinstance_restriction(property)
+                    restriction = self._get_isinstance_restriction(schema, name, property)
                     self._write(2, 'if isinstance(%s, %s) is True:' % (name, restriction))
                     if restriction == '(list, type(None))':
                         self._write(3, 'self.%s = [] if %s is None else list(%s)' % (name, name, name))
                     else:
+                        if 'pattern' in property:
+                            self._write(3, 'import re')
+                            self._write(3, "assert(bool(re.match(r'%s', %s)) is True)" % (property['pattern'], name))
                         self._write(3, 'self.%s = %s' % (name, name))
                     self._write(2, 'else:')
                     self._write(3, "raise TypeError('%s must be an instance of %s')" % (name, restriction))
 
-    def _get_isinstance_restriction(self, property):
+    def _get_isinstance_restriction(self, schema, name, property):
+        type_none = ', type(None)'
+        if 'required' in schema and name in schema['required']:
+            type_none = ''
         if '$ref' in property:
-            return '(%s, type(None))' % self._get_classname_from_ref(property['$ref'])
+            return '(%s%s)' % (self._get_classname_from_ref(property['$ref']), type_none)
         elif property['type'] in ['number', 'integer']:
-            return '(float, int, type(None))'
+            return '(float, int%s)' % type_none
         elif property['type'] == 'string':
-            return '(str, type(None))'
+            return '(str%s)' % type_none
         elif property['type'] == 'array':
-            return '(list, type(None))'
+            return '(list%s)' % type_none
         elif property['type'] == 'boolean':
-            return '(bool, type(None))'
+            return '(bool%s)' % type_none
 
     def _get_type_restriction(self, property):
         if '$ref' in property:
@@ -407,6 +412,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=True, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=True)
     builder.generate().test()
 

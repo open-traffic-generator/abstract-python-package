@@ -2,9 +2,9 @@ import pytest
 
 
 def test_choice(serializer):
-    from abstract_open_traffic_generator.flow import Flow, Endpoint, PortEndpoint
+    from abstract_open_traffic_generator.flow import Flow, TxRx, PortTxRx
     try:
-        flow = Flow(name='test', endpoint=PortEndpoint())
+        flow = Flow(name='test', tx_rx=TxRx())
         assert('Expected a TypeError when assigning physical')
     except TypeError as e:
         print(e)
