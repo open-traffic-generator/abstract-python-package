@@ -164,19 +164,22 @@ class Builder(object):
                     if 'required' in yobject and 'choice' not in yobject['required']:
                         choice_tuples.append(('None', choice_enum, choice_enum))
                     for choice_enum in yobject['properties']['choice']['enum']:
-                        choice = yobject['properties'][choice_enum]
-                        if '$ref' in choice:
-                            choice_classname = self._get_classname_from_ref(choice['$ref'])
-                            choice_tuples.append((choice_classname, choice_enum, choice['$ref']))
-                        elif choice['type'] == 'string':
-                            choice_tuples.append(('str', choice_enum, None))
-                        elif choice['type'] in ['number', 'integer']:
-                            choice_tuples.append(('float', choice_enum, None))
-                            choice_tuples.append(('int', choice_enum, None))
-                        elif choice['type'] == 'array':
-                            choice_tuples.append(('list', choice_enum, None))
-                        elif choice['type'] == 'boolean':
-                            choice_tuples.append(('boolean', choice_enum, None))
+                        if choice_enum not in yobject['properties']:
+                            choice_tuples.append((choice_enum, choice_enum, None))
+                        else:
+                            choice = yobject['properties'][choice_enum]
+                            if '$ref' in choice:
+                                choice_classname = self._get_classname_from_ref(choice['$ref'])
+                                choice_tuples.append((choice_classname, choice_enum, choice['$ref']))
+                            elif choice['type'] == 'string':
+                                choice_tuples.append(('str', choice_enum, None))
+                            elif choice['type'] in ['number', 'integer']:
+                                choice_tuples.append(('float', choice_enum, None))
+                                choice_tuples.append(('int', choice_enum, None))
+                            elif choice['type'] == 'array':
+                                choice_tuples.append(('list', choice_enum, None))
+                            elif choice['type'] == 'boolean':
+                                choice_tuples.append(('boolean', choice_enum, None))
 
                 # class documentation
                 self._write(1, '"""Generated from OpenAPI schema object #/components/schemas/%s' % key)

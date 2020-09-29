@@ -15,7 +15,7 @@ def test_port_traffic(serializer, tx, rx):
         packet=[Header(Ethernet()), Header(Vlan()), Header(ipv4)],
         size=Size(512),
         rate=Rate(unit='pps', value=1000000),
-        duration=Duration(Fixed(packets=0)))
+        duration=Duration(Continuous()))
     config = Config(ports=[tx], flows=[background])
     print(serializer.json(config))
 
@@ -29,7 +29,7 @@ def test_port_pfc_pause_traffic(serializer, tx, rx):
         packet=[Header(pfc_pause)],
         size=Size(64),
         rate=Rate(unit='pps', value=1000000),
-        duration=Duration(Burst(packets=10000)))
+        duration=Duration(Continuous()))
     config = Config(ports=[tx], flows=[pfc_flow])
     print(serializer.json(config))
 
