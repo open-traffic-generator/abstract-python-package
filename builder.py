@@ -202,6 +202,9 @@ class Builder(object):
                             continue
                         if name == 'choice':
                             type = 'Union[%s]' % ', '.join([item[0] for item in choice_tuples])
+                        elif name == 'additionalProperties':
+                            name = 'additional_properties'
+                            type = '**additional_properties'
                         else:
                             type = self._get_type_restriction(property)
                         if 'description' not in property:
@@ -294,6 +297,8 @@ class Builder(object):
             type_none = ''
         if '$ref' in property:
             return '(%s%s)' % (self._get_classname_from_ref(property['$ref']), type_none)
+        elif name == 'additionalProperties':
+            return '**additional_properties'
         elif property['type'] in ['number', 'integer']:
             return '(float, int%s)' % type_none
         elif property['type'] == 'string':
@@ -415,6 +420,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=False, clone_and_build=True)
+    builder = Builder(dependencies=False, clone_and_build=False)
     builder.generate().test()
 
