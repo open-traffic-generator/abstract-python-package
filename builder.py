@@ -341,6 +341,8 @@ class Builder(object):
     def _get_import_from_ref(self, ref):
         filename = '_'.join(ref.lower().split('#/components/schemas/')[-1].split('.')[0:-1])
         classname = self._get_classname_from_ref(ref)
+        if len(filename) == 0:
+            filename = classname.lower()
         return 'from abstract_open_traffic_generator.%s import %s' % (filename, classname)
 
     def _get_classname_from_ref(self, ref):
