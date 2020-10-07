@@ -422,6 +422,6 @@ class Builder(object):
                         
 
 if __name__ == '__main__':
-    builder = Builder(dependencies=False, clone_and_build=False)
+    builder = Builder(dependencies=False, clone_and_build=True)
     builder.generate().test()
 
