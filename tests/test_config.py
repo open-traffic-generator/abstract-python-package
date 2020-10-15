@@ -7,7 +7,7 @@ def test_config(serializer, tx, rx, port_ipv4_traffic):
     config = Config(ports=[tx], flows=[port_ipv4_traffic])
     print(serializer.json(config))
 
-def test_config_optioins(serializer):
+def test_config_options(serializer):
     options = Options(PortOptions(location_preemption=True))
     config = Config(options=options)
     print(serializer.json(config))

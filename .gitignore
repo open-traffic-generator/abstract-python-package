@@ -8,3 +8,4 @@ __pycache__
 *.log
 abstract_open_traffic_generator
 models
+.vscode
