@@ -83,6 +83,8 @@ class Builder(object):
         process_args = [
             'git',
             'clone',
+            '--branch',
+            'abstract-open-traffic-generator',
             'https://github.com/open-traffic-generator/models.git',
         ]
         process = subprocess.Popen(process_args, shell=False)
